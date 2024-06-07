@@ -1,4 +1,4 @@
-import {describe, expect, test} from '@jest/globals';
+import { describe, expect, test } from '@jest/globals';
 import { Octokit } from '@octokit/rest';
 import { createFileContent } from '../../helpers/helperFunctions'
 import { credentials } from '../../secrets/credentials';
@@ -20,21 +20,12 @@ describe('Create gists ', () => {
             await octokit.gists.delete({ gist_id: id });
         }
     });
-    
-    
-    afterAll(async () => {
-        //  remove all existing gists for the user and create new fresh gists
-        const ids = (await octokit.gists.list()).data.map((element) => element.id);
-        for (const id of ids) {
-            await octokit.gists.delete({ gist_id: id });
-        }});
-    
 
-        
+
     test('should not be able to create gist as an unauthorized user', async () => {
 
         try {
-            const response = await octokitUnauthorized.gists.create({
+            await octokitUnauthorized.gists.create({
                 files: { "README.md": { "content": "Hello World" } }
             });
 
@@ -49,15 +40,42 @@ describe('Create gists ', () => {
     test('should not be able to create gist without file as an authorized user', async () => {
 
         try {
-            const response = await octokit.gists.create({
+            await octokit.gists.create({
                 files: {}
-            }
-        )
+            })
         } catch (error: any) {
             expect(error.name).toBe('HttpError');
             expect(error.status).toEqual(422);
             expect(error.message).toMatch(/Validation Failed: {"resource":"Gist","code":"missing_field","field":"files"}/);
         }
+    });
+
+
+    test('should not be able to create gist with empty file as an authorized user', async () => {
+
+        try {
+            await octokit.gists.create({
+                files: { "emptyFile": { "content": "" } }
+            });
+
+        } catch (error: any) {
+            expect(error.name).toBe('HttpError');
+            expect(error.status).toEqual(422);
+            expect(error.message).toMatch(/Validation Failed: {"resource":"Gist","code":"missing_field","field":"files"}/);
+        }
+    });
+
+    
+    test('should be able to create gist without file name, but with content as an authorized user', async () => {
+        const response = JSON.parse(JSON.stringify(await octokit.gists.create({
+            files: { "": { "content": "This is the content" } }
+
+        })));
+
+        expect(response.status).toEqual(201);
+        expect(response.data.id).toBeTruthy;
+        expect(response.data.public).toEqual(false);
+        expect(response.data.description).toEqual(null);
     });
 
 
@@ -92,7 +110,7 @@ describe('Create gists ', () => {
     test('should not truncate the file smaller than 1MB', async () => {
         let gistId: string;
         const response = JSON.parse(JSON.stringify(await octokit.gists.create({
-            files: { "smallFile": {content: createFileContent('small_file')} }
+            files: { "smallFile": { content: createFileContent('small_file') } }
 
         })))
 
@@ -107,10 +125,10 @@ describe('Create gists ', () => {
     });
 
 
-    test('should truncate the file larger than 1MB', async () => {    
+    test('should truncate the file larger than 1MB', async () => {
         let gistId: string;
         const response = JSON.parse(JSON.stringify(await octokit.gists.create({
-            files: { "moreThan1MB": {content: createFileContent('5MiB')} }
+            files: { "moreThan1MB": { content: createFileContent('5MiB') } }
 
         })))
         gistId = response.data.id;

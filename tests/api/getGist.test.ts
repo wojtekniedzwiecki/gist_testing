@@ -31,14 +31,6 @@ describe('Getting single gists ', () => {
     
         newIds = (await octokit.gists.list()).data.map((element) => element.id);
     });
-    
-    
-    afterAll(async () => {
-        //  remove all existing gists for the user and create new fresh gists
-        const ids = (await octokit.gists.list()).data.map((element) => element.id);
-        for (const id of ids) {
-            await octokit.gists.delete({ gist_id: id });
-        }});
 
 
     test('should retrieve a single gist for the valid gist_id of the authorized user', async () => {
@@ -53,9 +45,9 @@ describe('Getting single gists ', () => {
 
     test('Should return error message Not Found for the invalid gist_id of the authorized user', async () => {
         try {
-            const response = JSON.parse(JSON.stringify(await octokit.gists.get({
+            await octokit.gists.get({
                 gist_id: 'invalidId'
-            })));
+            });
 
         } catch (error: any) {
             expect(error.name).toBe('HttpError');
